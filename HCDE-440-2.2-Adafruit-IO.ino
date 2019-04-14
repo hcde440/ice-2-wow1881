@@ -11,37 +11,37 @@
 //
 // All text above must be included in any redistribution.
 
-/************************** Configuration ***********************************/
+// HCDE 440 19sp ICE #2 submission for Alex Banh, ajb9702
 
-// edit the config.h tab and enter your Adafruit IO credentials
-// and any additional configuration needed for WiFi, cellular,
-// or ethernet clients.
-#include "config.h"0
+#include "config.h"
 
-/************************ Example Starts Here *******************************/
+// defines the button pin to be pin 5 on our ESP8266
+#define BUTTON_PIN 5
+// defines the photocell pin to be the analog pin on our ESP8266
+#define PHOTOCELL_PIN A0
 
-// digital pin 5
-#define BUTTON_PIN 2
-
-// button state
+// boolean variable that represents the current state of the button
+// a false value means the button is not pressed, true means that it is
 bool current = false;
-bool last = false;
 
-// set up the 'digital' feed
-AdafruitIO_Feed *digital = io.feed("button");
+// boolean variable that represents the current value of the photocell.
+// photocell values range from 0 to 1024, with 1024 being the brightest.
+int photocurrent = 0;
+
+// set up the 'digital' feed to our adafruitIO dashboard with the name "digital"
+AdafruitIO_Feed *digital = io.feed("digital");
+
+// set up the 'analog' feed to our adafruitIO dashboard with the name "analog"
+AdafruitIO_Feed *analog = io.feed("analog");
 
 void setup() {
 
   // set button pin as an input
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT);
 
   // start the serial connection
   Serial.begin(115200);
-  Serial.print("This board is running: ");
-  Serial.println(F(__FILE__));
-  Serial.print("Compiled: ");
-  Serial.println(F(__DATE__ " " __TIME__));
-   
+
   // wait for serial monitor to open
   while(! Serial);
 
@@ -63,10 +63,8 @@ void setup() {
 
 void loop() {
 
-  // io.run(); is required for all sketches.
-  // it should always be present at the top of your loop
-  // function. it keeps the client connected to
-  // io.adafruit.com, and processes any incoming data.
+  // io.run() keeps the client connected to
+  // io.adafruit.com and processes any incoming data.
   io.run();
 
   // grab the current state of the button.
@@ -77,16 +75,21 @@ void loop() {
   else
     current = false;
 
-  // return if the value hasn't changed
-  if(current == last)
-    return;
+  // grab the current state of the photocell
+  photocurrent = analogRead(PHOTOCELL_PIN);
 
-  // save the current state to the 'digital' feed on adafruit io
+  // save/publish the current state to the 'digital' feed on adafruit io
   Serial.print("sending button -> ");
   Serial.println(current);
   digital->save(current);
 
-  // store last button state
-  last = current;
+  // save/publish the current state to the analog feed
+  Serial.print("sending -> ");
+  Serial.println(photocurrent);
+  analog->save(photocurrent);
+
+  // Forces at 2 second delay between readings to prevent overloading
+  // of data sent to the adafruitIO dashboard.
+  delay(2000);
 
 }
